@@ -10,6 +10,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 
+#include "Components/StaticMeshComponent.h"
+#include "Components/ArrowComponent.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -21,6 +24,7 @@
 
 #include "MyGameInstance.h"
 #include "Flare/Flare.h"
+#include "Particles/ParticleSystem.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -65,7 +69,37 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 
+	 // 1. FirstPerson카메라
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->SetupAttachment(RootComponent);
+
+		// 2. LaserMesh
+		LaserMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserMesh"));
+		LaserMesh->SetupAttachment(FirstPersonCamera);
+
+			// 3. LaserArrow (LaserMesh 아래)
+			LaserArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("LaserArrow"));
+			LaserArrow->SetupAttachment(LaserMesh);
+
+				// 4. LaserArrow 아래 LaserSphere
+				LaserSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserSphere"));
+				LaserSphere->SetupAttachment(LaserArrow);
+
+					// 5. LaserMesh 아래 다른 메시들
+					DissolveLaser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DissolveLaser"));
+					DissolveLaser->SetupAttachment(LaserSphere);
+
+					Laser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Laser"));
+					Laser->SetupAttachment(LaserSphere);
+
+		// 6. RifleMesh (루트에 붙일 수도, FirstPersonCamera에 붙일 수도 있음)
+		RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
+		RifleMesh->SetupAttachment(FirstPersonCamera); // 또는 SetupAttachment(FirstPersonCamera);
+
 	isInCave = false;
+
+	//모드
+	modeNumber = 0;
 
 	//조명
 	flareNum = 4;
@@ -142,6 +176,39 @@ void AKimyuminDemoCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	DeltaSeconds = DeltaTime;
+}
+
+void AKimyuminDemoCharacter::ModeChange()
+{
+	if (!isInCave) {
+		SetDefaultMode();
+	}
+	else {
+		if (modeNumber == 0) {
+			SetDefaultMode();
+		}
+		else {
+			SetWeaponMode();
+		}
+	}
+}
+
+void AKimyuminDemoCharacter::SetDefaultMode()
+{
+	modeNumber = 0;
+
+	LaserMesh->SetVisibility(false);
+	RifleMesh->SetVisibility(false);
+	FirstPersonCamera->SetActive(false);
+	FollowCamera->SetActive(true);
+}
+
+void AKimyuminDemoCharacter::SetWeaponMode()
+{
+	LaserMesh->SetVisibility(true);
+	RifleMesh->SetVisibility(true);
+	FirstPersonCamera->SetActive(true);
+	FollowCamera->SetActive(false);
 }
 
 
@@ -229,10 +296,13 @@ void AKimyuminDemoCharacter::PictorialFlipFlop()
 	}
 }
 
+
+
+
+
 //비효율적임. 바꿔야함
 void AKimyuminDemoCharacter::MapAndStoreFlipFlop()
 {
-
 	//맵 또는 상점 둘중에 하나라도 없으면 return
 	if (!wbMapSelect || !wbStore) return;
 
@@ -294,6 +364,67 @@ void AKimyuminDemoCharacter::MapAndStoreFlipFlop()
 
 //////////////////////////////////////////////////////////////////////////
 // Input
+
+void AKimyuminDemoCharacter::LeftMouseBtnPressed()
+{
+	if (modeNumber == 1) { //총
+		// 1. 반동 적용
+		RifleMesh->AddLocalRotation(FRotator(-2.0f, 0.f, 0.f)); // 위로 반동
+
+		// 2. 라인 트레이스 계산
+		FVector Start = FirstPersonCamera->GetComponentLocation();
+		FVector End = Start + FirstPersonCamera->GetForwardVector() * 100000.0f;
+
+		FHitResult Hit;
+		FCollisionQueryParams TraceParams;
+		TraceParams.AddIgnoredActor(this);
+		TraceParams.bReturnPhysicalMaterial = true;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			Hit,
+			Start,
+			End,
+			ECC_Visibility,
+			TraceParams
+		);
+
+		// 3. 피격 처리
+		if (bHit){
+			// 이펙트 스폰
+			if (ExplosionFX){
+				UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					ExplosionFX,
+					Hit.ImpactPoint,
+					FRotator::ZeroRotator,
+					FVector(1.0f) // Scale
+				);
+			}
+
+			// 데미지 적용
+			UGameplayStatics::ApplyDamage(
+				Hit.GetActor(),
+				10.0f,
+				GetController(),
+				this,
+				UDamageType::StaticClass()
+			);
+		}
+
+		// 4. 반동 복귀 (0.05초 뒤)
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this](){
+			RifleMesh->AddLocalRotation(FRotator(2.0f, 0.f, 0.f)); // 원위치
+		}, 0.05f, false);
+	}
+	else { //레이저
+
+	}
+}
+
+void AKimyuminDemoCharacter::LeftMouseBtnReleased()
+{
+}
 
 void AKimyuminDemoCharacter::NotifyControllerChanged()
 {

@@ -48,6 +48,28 @@ class AKimyuminDemoCharacter : public ACharacter
 	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChildActor", meta = (AllowPrivateAccess = "true"))
 	//class UChildActorComponent* FlareChildActor;
 
+	//무기 모드 일 시 (FirstPerson Camera)
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* LaserMesh;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UArrowComponent* LaserArrow;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* LaserSphere;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* DissolveLaser;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* Laser;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* RifleMesh;
+
 //기본 변수 생성
 private:
 
@@ -58,8 +80,20 @@ private:
 
 //기본 변수 생성
 public:
+
+
 	UPROPERTY(BlueprintReadWrite)
 	bool isInCave;
+
+	//모드 (기본, 무기)
+	UPROPERTY(BlueprintReadWrite)
+	int modeNumber;
+	UFUNCTION(BlueprintCallable)
+	void ModeChange();
+	UFUNCTION()
+	void SetDefaultMode();
+	UFUNCTION()
+	void SetWeaponMode();
 
 	//UI
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -78,7 +112,7 @@ public:
 	//맵 선택 or 상점 UI
 	UPROPERTY(BlueprintReadWrite)
 	class UUserWidget* wbMapSelect;
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool isOverlapMapSelectZone{ false };
 	UPROPERTY(BlueprintReadWrite)
 	class UUserWidget* wbStore;
@@ -107,6 +141,14 @@ public:
 	bool isPictorialOpen;
 	UFUNCTION(BlueprintCallable)
 	void PictorialFlipFlop();
+
+	//공격
+	UFUNCTION(BlueprintCallable)
+	void LeftMouseBtnPressed();
+	UPROPERTY(EditAnywhere)
+	class UParticleSystem* ExplosionFX;
+	UFUNCTION(BlueprintCallable)
+	void LeftMouseBtnReleased();
 
 	//산소 감소
 	//UFUNCTION()
