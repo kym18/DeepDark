@@ -45,7 +45,7 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
@@ -64,8 +64,18 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
+
+	isInCave = false;
+
+	//조명
 	flareNum = 4;
 	flareSpeed = 1000.f;
+
+	//대시
+	isDash = false;
+
+	//도감
+	isPictorialOpen = false;
 }
 
 void AKimyuminDemoCharacter::BeginPlay()
@@ -79,15 +89,25 @@ void AKimyuminDemoCharacter::BeginPlay()
 	}
 
 	//위젯 생성
-	if (WB_UIClass && WB_UIPictorialBook) {
+	if (WB_UIClass && WB_UIPictorialBook && WB_UIMapSelect && WB_UIStore) {
 		if (UUserWidget* wb_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIClass)) {
-			if (isUiOpen) {
+			if (isInCave) {
 				wb_ui->AddToViewport();
 			}
 		}
 
 		if (UUserWidget* pictorial_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIPictorialBook)) {
 			pictorialBook = pictorial_ui;
+		}
+
+		if (UUserWidget* map_select_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIMapSelect)) {
+			UE_LOG(LogTemp, Warning, TEXT("map_select_ui"));
+			wbMapSelect = map_select_ui;
+		}
+
+		if (UUserWidget* store_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIStore)) {
+			UE_LOG(LogTemp, Warning, TEXT("store_ui"));
+			wbStore = store_ui;
 		}
 	}
 
@@ -97,8 +117,6 @@ void AKimyuminDemoCharacter::BeginPlay()
 		player_controller->PlayerCameraManager->ViewPitchMin = -50.0f;
 		player_controller->PlayerCameraManager->ViewPitchMax = 50.0f;
 	}
-
-
 
 	//산소 시스템
 	//우주선 밖에서만 실행 되도록 수정 예정(임시)
@@ -125,6 +143,7 @@ void AKimyuminDemoCharacter::Tick(float DeltaTime)
 
 	DeltaSeconds = DeltaTime;
 }
+
 
 void AKimyuminDemoCharacter::SpawnFlare()
 {
@@ -164,6 +183,113 @@ void AKimyuminDemoCharacter::SpawnFlare()
 	}
 
 }
+
+void AKimyuminDemoCharacter::DashFlipFlop()
+{
+	if (!isDash) {
+	//걷기 -> 대시 중
+		GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	}
+	else {
+	//대시 중 -> 걷기
+		GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	}
+	isDash = !isDash;
+}
+
+void AKimyuminDemoCharacter::PictorialFlipFlop()
+{
+	if (!pictorialBook) return;
+	if (!isInCave) return;
+
+	APlayerController* controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+
+	if (!pictorialBook->IsInViewport()) {
+		pictorialBook->AddToViewport();
+
+		// 마우스 커서 ON
+		controller->bShowMouseCursor = true;
+
+		// 입력 모드: 게임 + UI
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(pictorialBook->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		controller->SetInputMode(InputMode);
+	}
+	else {
+		pictorialBook->RemoveFromParent();
+
+		// 마우스 커서 OFF
+		controller->bShowMouseCursor = false;
+
+		// 입력 모드: 게임
+		FInputModeGameOnly InputMode;
+		controller->SetInputMode(InputMode);
+	}
+}
+
+//비효율적임. 바꿔야함
+void AKimyuminDemoCharacter::MapAndStoreFlipFlop()
+{
+
+	//맵 또는 상점 둘중에 하나라도 없으면 return
+	if (!wbMapSelect || !wbStore) return;
+
+	APlayerController* controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	//맵 선택 UI 오픈
+	if(isOverlapMapSelectZone){
+		if (!wbMapSelect->IsInViewport()) {
+			wbMapSelect->AddToViewport();
+			// 마우스 커서 ON
+			controller->bShowMouseCursor = true;
+
+			// 입력 모드: 게임 + UI
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(wbMapSelect->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			InputMode.SetHideCursorDuringCapture(true);
+			controller->SetInputMode(InputMode);
+		}
+		else {
+			wbMapSelect->RemoveFromParent();
+
+			// 마우스 커서 OFF
+			controller->bShowMouseCursor = false;
+
+			// 입력 모드: 게임
+			FInputModeGameOnly InputMode;
+			controller->SetInputMode(InputMode);
+		}
+	}
+
+	//상점 UI 오픈
+	if (isOverlapStore) {
+		if (!wbStore->IsInViewport()) {
+			wbStore->AddToViewport();
+			// 마우스 커서 ON
+			controller->bShowMouseCursor = true;
+
+			// 입력 모드: 게임 + UI
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(wbStore->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			InputMode.SetHideCursorDuringCapture(true);
+			controller->SetInputMode(InputMode);
+		}
+		else {
+			wbStore->RemoveFromParent();
+
+			// 마우스 커서 OFF
+			controller->bShowMouseCursor = false;
+
+			// 입력 모드: 게임
+			FInputModeGameOnly InputMode;
+			controller->SetInputMode(InputMode);
+		}
+	}
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////

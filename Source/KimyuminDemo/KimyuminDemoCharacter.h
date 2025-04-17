@@ -58,16 +58,34 @@ private:
 
 //기본 변수 생성
 public:
+	UPROPERTY(BlueprintReadWrite)
+	bool isInCave;
+
 	//UI
-	bool isUiOpen;
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> WB_UIClass;
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> WB_UIPictorialBook;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIMapSelect;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIStore;
 
-
+	//도감 UI
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UUserWidget* pictorialBook;
+
+	//맵 선택 or 상점 UI
+	UPROPERTY(BlueprintReadWrite)
+	class UUserWidget* wbMapSelect;
+	UPROPERTY(BlueprintReadWrite)
+	bool isOverlapMapSelectZone{ false };
+	UPROPERTY(BlueprintReadWrite)
+	class UUserWidget* wbStore;
+	UPROPERTY(BlueprintReadWrite)
+	bool isOverlapStore{ false };
+	UFUNCTION(BlueprintCallable)
+	void MapAndStoreFlipFlop();
 
 
 	//조명탄
@@ -80,6 +98,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SpawnFlare();
 
+	//대시
+	bool isDash;
+	UFUNCTION(BlueprintCallable)
+	void DashFlipFlop();
+
+	//도감
+	bool isPictorialOpen;
+	UFUNCTION(BlueprintCallable)
+	void PictorialFlipFlop();
 
 	//산소 감소
 	//UFUNCTION()
