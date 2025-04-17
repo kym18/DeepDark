@@ -26,6 +26,8 @@
 #include "Flare/Flare.h"
 #include "Particles/ParticleSystem.h"
 
+#include "CableComponent.h"
+
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,6 +71,15 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 
+	// Grapple
+	GrappleStartLocation = CreateDefaultSubobject<USceneComponent>(TEXT("GrappleStartLocation"));
+	GrappleStartLocation->SetupAttachment(RootComponent);
+
+	
+	//GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
+	//GrappleCable->SetupAttachment(GrappleStartLocation);
+
+
 	 // 1. FirstPerson카메라
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCamera->SetupAttachment(RootComponent);
@@ -97,6 +108,7 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 		RifleMesh->SetupAttachment(FirstPersonCamera); // 또는 SetupAttachment(FirstPersonCamera);
 
 	isInCave = false;
+	CurrentCharacterIndex = 0;
 
 	//모드
 	modeNumber = 0;
@@ -110,6 +122,9 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 
 	//도감
 	isPictorialOpen = false;
+
+	//공격 관련
+	grappleDistance = 5000.f;
 }
 
 void AKimyuminDemoCharacter::BeginPlay()
@@ -417,13 +432,242 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 			RifleMesh->AddLocalRotation(FRotator(2.0f, 0.f, 0.f)); // 원위치
 		}, 0.05f, false);
 	}
-	else { //레이저
+	else if(modeNumber == 2) { //레이저
+		Laser->SetVisibility(true);
 
+		StartFiringLaser();
+	}
+	else if (modeNumber == 3) { //특수 능력
+		//0은 탐험가, 1은 전투 특화
+		if (CurrentCharacterIndex == 0) {
+			IsHoldingF = true;
+			// 1. 라인트레이스 시작과 끝 위치
+			FVector Start = FirstPersonCamera->GetComponentLocation();
+			FVector Direction = FirstPersonCamera->GetForwardVector();
+			FVector End = Start + Direction * grappleDistance;
+
+			FHitResult Hit;
+			FCollisionQueryParams Params;
+			Params.AddIgnoredActor(this); // 자기 자신 무시
+			Params.bReturnPhysicalMaterial = false;
+
+			// 2. 라인트레이스
+			bool bHit = GetWorld()->LineTraceSingleByChannel(
+				Hit,
+				Start,
+				End,
+				ECC_Visibility,
+				Params
+			);
+
+			// 3. 히트한 경우 Dissolve 액터 스폰
+			if (bHit)
+			{
+				FTransform SpawnTransform;
+				SpawnTransform.SetLocation(Hit.ImpactPoint);
+				SpawnTransform.SetRotation(FQuat::Identity);
+				SpawnTransform.SetScale3D(FVector(1.0f));
+
+				AActor* Spawned = GetWorld()->SpawnActor<AActor>(DissolveClass, SpawnTransform);
+				currentHole = Spawned;
+			}
+		}
+		else if (CurrentCharacterIndex == 1) {
+			// 1. 상태 설정
+			isGrappling = true;
+			FRotator CameraRotate = FRotator::ZeroRotator; // 이후 회전 처리에 사용
+			GetCharacterMovement()->GravityScale = 1.0f;
+
+			// 2. 라인트레이스 정보 계산
+			FVector Start = FirstPersonCamera->GetComponentLocation();
+			FVector Forward = FirstPersonCamera->GetForwardVector();
+			FVector End = Start + (Forward * grappleDistance);
+
+			FHitResult Hit;
+			FCollisionQueryParams Params;
+			Params.AddIgnoredActor(this);
+			Params.bReturnPhysicalMaterial = false;
+
+			// 3. 트레이스 실행
+			bool bHit = GetWorld()->LineTraceSingleByChannel(
+				Hit,
+				Start,
+				End,
+				ECC_Visibility,
+				Params
+			);
+
+			// 4. 히트 성공 시 회전 계산
+			if (bHit)
+			{
+				FVector TraceDir = (Hit.ImpactPoint - Start).GetSafeNormal();
+				CameraRotate = TraceDir.ToOrientationRotator();
+
+				FVector grapple_location = Hit.Location;
+
+				// 1. GrappleLocation은 외부에서 이미 설정되어 있다고 가정
+				// 2. 그래플 훅 시각 효과 or 로프 쏘기
+
+				// 1. 액터 스폰
+				FTransform SpawnTransform;
+				SpawnTransform.SetLocation(grapple_location);
+				SpawnTransform.SetRotation(GetActorRotation().Quaternion());
+				SpawnTransform.SetScale3D(FVector(1.0f));
+				Hook = GetWorld()->SpawnActor<AActor>(GrappleHookClass, SpawnTransform);
+
+				// 2. 케이블 보이기
+				GrappleCable->SetVisibility(true);
+
+				GrappleCable->SetWorldLocation(grapple_location);
+
+				// 3. 타이머로 위치 보간 업데이트
+				/*GetWorld()->GetTimerManager().SetTimer(
+					GrappleUpdateTimer,
+					this,
+					&AYourCharacter::UpdateGrappleCable,
+					0.01f,
+					true
+				);*/
+
+				// 3. 초기 속도 0으로
+				//LaunchCharacter(FVector(0.f, 0.f, 0.f), true, true);
+
+				// 4. 약간의 지연 후 실제 방향 발사
+				// GetWorld()->GetTimerManager().SetTimer(GrappleLaunchTimerHandle, this, &AYourCharacter::LaunchToGrapple, 0.1f, false);
+
+				FVector CurrentLocation = GetActorLocation();
+				FVector Direction = (grapple_location - CurrentLocation).GetSafeNormal();
+				FVector LaunchVelocity = Direction * 2500.0f;
+
+				LaunchCharacter(LaunchVelocity, true, true);
+
+				// 5. 리셋 예약
+				FTimerHandle GrappleResetTimerHandle;
+				GetWorld()->GetTimerManager().SetTimer(GrappleResetTimerHandle, this, &AKimyuminDemoCharacter::ResetGrappleHook, 0.45f, false);
+				//이후에 Hook 이동 시작 함수 등에서 이 Hit 결과 활용
+				//예: HookTargetLocation = Hit.ImpactPoint;
+			}
+			else {
+
+			}
+		}
 	}
 }
 
+void AKimyuminDemoCharacter::ResetGrappleHook()
+{
+
+	// 1. 케이블 숨기기
+	if (GrappleCable)
+	{
+		GrappleCable->SetVisibility(false);
+	}
+
+	// 2. 훅 제거
+	if (IsValid(Hook))
+	{
+		Hook->Destroy();
+		Hook = nullptr;
+	}
+
+	// 3. 중력 스케일 복원
+	GetCharacterMovement()->GravityScale = 1.0f;
+
+	// 4. 상태 초기화
+	isGrappling = false;
+
+	// 5. 딜레이 후 CanGrapple = true
+	FTimerHandle GrappleCooldownTimer;
+	GetWorld()->GetTimerManager().SetTimer(
+		GrappleCooldownTimer,
+		this,
+		&AKimyuminDemoCharacter::EnableGrapple,
+		2.0,
+		false
+	);
+}
+
+void AKimyuminDemoCharacter::EnableGrapple()
+{
+	isGrappling = true;
+}
+
+void AKimyuminDemoCharacter::StartFiringLaser()
+{
+	GetWorld()->GetTimerManager().SetTimer(LaserTimerHandle, this, &AKimyuminDemoCharacter::FireLaserTick, 0.05f, true);
+}
+
+void AKimyuminDemoCharacter::FireLaserTick()
+{
+	if (!LaserArrow || !Laser) return;
+
+	FVector Start = LaserArrow->GetComponentLocation();
+	FVector End = Start + LaserArrow->GetForwardVector() * 100000.0f;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+
+	if (bHit)
+	{
+		float DistanceToWall = (Hit.ImpactPoint - Start).Size();
+
+		// 1. 메시 길이 조정
+		FVector NewScale = FVector(DistanceToWall * 0.01f, 1.f, 1.f); // Scale은 약간 보정 필요
+		Laser->SetWorldScale3D(NewScale);
+
+		// 2. 메시 회전 보정
+		FRotator RotationAdjust = FRotator(-50.f, 0.f, 0.f); // 블루프린트에 따라 각도 조정
+		Laser->AddLocalRotation(RotationAdjust);
+
+		// 3. 충돌 이펙트 및 데미지
+		if (LaserImpactFX){
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), LaserImpactFX, Hit.ImpactPoint);
+		}
+
+		UGameplayStatics::ApplyDamage(
+			Hit.GetActor(),
+			10.0f,
+			GetController(),
+			this,
+			UDamageType::StaticClass()
+		);
+
+		// 4. 충돌 액터 스폰 (BP_LaserCollision)
+		if (LaserCollisionClass)
+		{
+			FTransform SpawnTransform;
+			SpawnTransform.SetLocation(Hit.ImpactPoint);
+			GetWorld()->SpawnActor<AActor>(LaserCollisionClass, SpawnTransform);
+		}
+
+		// 5. 광물 캐스팅 시도
+		//if (ABP_Mineral* Mineral = Cast<ABP_Mineral>(Hit.GetActor())){
+		//	// TODO: 원하는 처리 추가
+		//}
+	}
+}
+
+
+
+
+
 void AKimyuminDemoCharacter::LeftMouseBtnReleased()
 {
+	if (modeNumber == 2) { //레이저
+		Laser->SetVisibility(false);
+		Laser->SetRelativeScale3D(FVector(2, 2, 2));
+		GetWorld()->GetTimerManager().ClearTimer(LaserTimerHandle);
+	}
+	else if (modeNumber == 3) {
+		if (!IsHoldingF) return;
+		if (currentHole) {
+			currentHole->Destroy();
+		}
+		IsHoldingF = false;
+	}
 }
 
 void AKimyuminDemoCharacter::NotifyControllerChanged()

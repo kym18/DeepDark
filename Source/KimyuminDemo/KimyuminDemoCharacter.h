@@ -48,6 +48,12 @@ class AKimyuminDemoCharacter : public ACharacter
 	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChildActor", meta = (AllowPrivateAccess = "true"))
 	//class UChildActorComponent* FlareChildActor;
 
+	//작살
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grapple", meta = (AllowPrivateAccess = "true"))
+	USceneComponent* GrappleStartLocation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grapple", meta = (AllowPrivateAccess = "true"))
+	class UCableComponent* GrappleCable;
+
 	//무기 모드 일 시 (FirstPerson Camera)
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCamera;
@@ -81,6 +87,8 @@ private:
 //기본 변수 생성
 public:
 
+	UPROPERTY(BlueprintReadWrite)
+	int CurrentCharacterIndex;
 
 	UPROPERTY(BlueprintReadWrite)
 	bool isInCave;
@@ -145,8 +153,39 @@ public:
 	//공격
 	UFUNCTION(BlueprintCallable)
 	void LeftMouseBtnPressed();
-	UPROPERTY(EditAnywhere)
-	class UParticleSystem* ExplosionFX;
+		//1번 무기
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* ExplosionFX;
+
+		//2번 무기
+		FTimerHandle LaserTimerHandle;
+		void StartFiringLaser();
+		void FireLaserTick();
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* LaserImpactFX;
+		
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> LaserCollisionClass;
+
+		//3번 무기
+		bool IsHoldingF;
+		UPROPERTY(EditAnywhere)
+		float grappleDistance;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveClass;
+		UPROPERTY(EditAnywhere)
+		AActor* currentHole;
+
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> GrappleHookClass;
+
+		AActor* Hook;
+		bool isGrappling;
+
+		UFUNCTION()
+		void ResetGrappleHook();
+		void EnableGrapple();
+
 	UFUNCTION(BlueprintCallable)
 	void LeftMouseBtnReleased();
 
