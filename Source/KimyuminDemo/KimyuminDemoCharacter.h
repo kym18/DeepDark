@@ -44,6 +44,10 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	//flare child actor
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChildActor", meta = (AllowPrivateAccess = "true"))
+	//class UChildActorComponent* FlareChildActor;
+
 //기본 변수 생성
 private:
 
@@ -61,8 +65,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> WB_UIPictorialBook;
 
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UUserWidget* pictorialBook;
+
+
+	//조명탄
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flare")
+	int flareNum;
+	UPROPERTY(EditAnywhere, Category = "Flare")
+	float flareSpeed;
+	UPROPERTY(EditAnywhere, Category = "Flare")
+	TSubclassOf<AActor> BP_Flare;
+	UFUNCTION(BlueprintCallable)
+	void SpawnFlare();
 
 
 	//산소 감소

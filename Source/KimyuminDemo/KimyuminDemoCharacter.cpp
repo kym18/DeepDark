@@ -17,8 +17,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
+#include "Components/ChildActorComponent.h"
 
 #include "MyGameInstance.h"
+#include "Flare/Flare.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -61,6 +63,9 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	flareNum = 4;
+	flareSpeed = 1000.f;
 }
 
 void AKimyuminDemoCharacter::BeginPlay()
@@ -116,6 +121,48 @@ void AKimyuminDemoCharacter::BeginPlay()
 
 void AKimyuminDemoCharacter::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
+
+	DeltaSeconds = DeltaTime;
+}
+
+void AKimyuminDemoCharacter::SpawnFlare()
+{
+	if (flareNum <= 0) {
+		return;
+	}
+
+	flareNum--;
+
+	if (!BP_Flare) return;
+
+	// 1. 스폰 위치 및 회전
+	FVector forward_vector = GetActorForwardVector();
+	FVector spawn_location = GetActorLocation() + forward_vector * 40;
+
+	// 2. 스폰 파라미터
+	FActorSpawnParameters spawn_Params;
+	spawn_Params.Owner = this;
+	spawn_Params.Instigator = GetInstigator();
+
+	// 3. 스폰 실행
+	AActor* spawned_actor = GetWorld()->SpawnActor<AActor>(BP_Flare, spawn_location, GetActorRotation(), spawn_Params);
+	if (!spawned_actor) return;
+
+	AFlare* flare = Cast<AFlare>(spawned_actor);
+	if (!flare) return;
+
+
+	// 4. 물리 속도 적용
+	FVector velocity = forward_vector * flareSpeed;
+
+	// 피융
+	if (UStaticMeshComponent* flare_mesh = flare->FlareMesh){
+		flare_mesh->SetSimulatePhysics(true);
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *velocity.ToString());
+		flare_mesh->SetPhysicsLinearVelocity(velocity);
+	}
+
 }
 
 
