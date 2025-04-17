@@ -44,29 +44,55 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+//기본 변수 생성
+private:
+
+	UPROPERTY()
+	class UMyGameInstance* myGameInstance;
+
+	float DeltaSeconds;
+
+//기본 변수 생성
+public:
+	//UI
+	bool isUiOpen;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIClass;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIPictorialBook;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UUserWidget* pictorialBook;
+
+
+	//산소 감소
+	//UFUNCTION()
+	//void DecreaseOxygen();
+
 public:
 	AKimyuminDemoCharacter();
 	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 protected:
+
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
-
-protected:
 
 	virtual void NotifyControllerChanged() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 };
 

@@ -3,13 +3,22 @@
 #include "KimyuminDemoCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
+
+#include "MyGameInstance.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -53,6 +62,62 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
+
+void AKimyuminDemoCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	//게임 인스턴스 저장
+	UGameInstance* GameInstance = GetGameInstance();
+	if (UMyGameInstance* my_game_instance = Cast<UMyGameInstance>(GameInstance)){
+		myGameInstance = my_game_instance;
+	}
+
+	//위젯 생성
+	if (WB_UIClass && WB_UIPictorialBook) {
+		if (UUserWidget* wb_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIClass)) {
+			if (isUiOpen) {
+				wb_ui->AddToViewport();
+			}
+		}
+
+		if (UUserWidget* pictorial_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIPictorialBook)) {
+			pictorialBook = pictorial_ui;
+		}
+	}
+
+	//플레이어 카메라 조정
+	APlayerController* player_controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (player_controller && player_controller->PlayerCameraManager) {
+		player_controller->PlayerCameraManager->ViewPitchMin = -50.0f;
+		player_controller->PlayerCameraManager->ViewPitchMax = 50.0f;
+	}
+
+
+
+	//산소 시스템
+	//우주선 밖에서만 실행 되도록 수정 예정(임시)
+	/*FTimerHandle OxygenTimerHandle;
+	GetWorldTimerManager().SetTimer(
+		OxygenTimerHandle,                  
+		this,                                
+		&AKimyuminDemoCharacter::DecreaseOxygen,            
+		1.0f,                               
+		true
+	);*/
+
+}
+
+//void AKimyuminDemoCharacter::DecreaseOxygen() 
+//{
+//	//임시
+//	UE_LOG(LogTemp, Warning, TEXT("Oxygen Decreased"));
+//}
+
+void AKimyuminDemoCharacter::Tick(float DeltaTime)
+{
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // Input
