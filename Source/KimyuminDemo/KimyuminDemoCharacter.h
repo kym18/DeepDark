@@ -189,6 +189,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LeftMouseBtnReleased();
 
+	UFUNCTION(BlueprintCallable)
+	void RightMouseBtnPressed();
+		FTimerHandle DissolveTimerHandle;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveCircleClass;
+	UFUNCTION(BlueprintCallable)
+	void RightMouseBtnReleased();
+
 	//산소 감소
 	//UFUNCTION()
 	//void DecreaseOxygen();

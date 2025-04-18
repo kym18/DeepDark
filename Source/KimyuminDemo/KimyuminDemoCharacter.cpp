@@ -75,14 +75,14 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	GrappleStartLocation = CreateDefaultSubobject<USceneComponent>(TEXT("GrappleStartLocation"));
 	GrappleStartLocation->SetupAttachment(RootComponent);
 
-	
-	//GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
-	//GrappleCable->SetupAttachment(GrappleStartLocation);
+	GrappleCable = CreateDefaultSubobject<UCableComponent>(TEXT("GrappleCable"));
+	GrappleCable->SetupAttachment(GrappleStartLocation);
 
 
 	 // 1. FirstPerson카메라
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCamera->SetupAttachment(RootComponent);
+	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
+	FirstPersonCamera->bUsePawnControlRotation = true;
 
 		// 2. LaserMesh
 		LaserMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserMesh"));
@@ -426,7 +426,7 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 			);
 		}
 
-		// 4. 반동 복귀 (0.05초 뒤)
+		// 4. 반동 복귀
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this](){
 			RifleMesh->AddLocalRotation(FRotator(2.0f, 0.f, 0.f)); // 원위치
@@ -515,7 +515,6 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 				SpawnTransform.SetScale3D(FVector(1.0f));
 				Hook = GetWorld()->SpawnActor<AActor>(GrappleHookClass, SpawnTransform);
 
-				// 2. 케이블 보이기
 				GrappleCable->SetVisibility(true);
 
 				GrappleCable->SetWorldLocation(grapple_location);
@@ -537,18 +536,15 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 
 				FVector CurrentLocation = GetActorLocation();
 				FVector Direction = (grapple_location - CurrentLocation).GetSafeNormal();
-				FVector LaunchVelocity = Direction * 2500.0f;
+				FVector LaunchVelocity = Direction * 2.5f;
 
-				LaunchCharacter(LaunchVelocity, true, true);
+				LaunchCharacter(LaunchVelocity, false, false);
 
-				// 5. 리셋 예약
 				FTimerHandle GrappleResetTimerHandle;
 				GetWorld()->GetTimerManager().SetTimer(GrappleResetTimerHandle, this, &AKimyuminDemoCharacter::ResetGrappleHook, 0.45f, false);
-				//이후에 Hook 이동 시작 함수 등에서 이 Hit 결과 활용
-				//예: HookTargetLocation = Hit.ImpactPoint;
 			}
 			else {
-
+				ResetGrappleHook();
 			}
 		}
 	}
@@ -558,14 +554,12 @@ void AKimyuminDemoCharacter::ResetGrappleHook()
 {
 
 	// 1. 케이블 숨기기
-	if (GrappleCable)
-	{
+	if (GrappleCable) {
 		GrappleCable->SetVisibility(false);
 	}
 
 	// 2. 훅 제거
-	if (IsValid(Hook))
-	{
+	if (IsValid(Hook)) {
 		Hook->Destroy();
 		Hook = nullptr;
 	}
@@ -587,8 +581,7 @@ void AKimyuminDemoCharacter::ResetGrappleHook()
 	);
 }
 
-void AKimyuminDemoCharacter::EnableGrapple()
-{
+void AKimyuminDemoCharacter::EnableGrapple(){
 	isGrappling = true;
 }
 
@@ -651,9 +644,6 @@ void AKimyuminDemoCharacter::FireLaserTick()
 }
 
 
-
-
-
 void AKimyuminDemoCharacter::LeftMouseBtnReleased()
 {
 	if (modeNumber == 2) { //레이저
@@ -668,6 +658,55 @@ void AKimyuminDemoCharacter::LeftMouseBtnReleased()
 		}
 		IsHoldingF = false;
 	}
+}
+
+void AKimyuminDemoCharacter::RightMouseBtnPressed()
+{
+	if (modeNumber != 2) return;
+
+	// 1. DissolveLaser 활성화
+	DissolveLaser->SetVisibility(true);
+
+	// 2. 레이저 업데이트용 타이머 시작
+	GetWorld()->GetTimerManager().SetTimer(DissolveTimerHandle, FTimerDelegate::CreateLambda([this]()
+		{
+			FVector Start = LaserArrow->GetComponentLocation();
+			FVector Direction = LaserArrow->GetForwardVector();
+			FVector End = Start + Direction * 100000.0f;
+
+			FHitResult Hit;
+			FCollisionQueryParams Params;
+			Params.AddIgnoredActor(this);
+
+			bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+
+			if (bHit){
+				float DistanceToWall = (Hit.ImpactPoint - Start).Size();
+
+				// 3. DissolveLaser 크기 조정
+				DissolveLaser->SetRelativeScale3D(FVector(DistanceToWall * 0.01f, 2.f, 2.f)); // 거리 보정
+				DissolveLaser->AddLocalRotation(FRotator(50.f, 0.f, 0.f));
+
+				// 4. 히트 지점에 Dissolve 이펙트 스폰
+				FTransform SpawnTransform;
+				SpawnTransform.SetLocation(Hit.ImpactPoint);
+				SpawnTransform.SetRotation(FQuat::Identity);
+				SpawnTransform.SetScale3D(FVector(1.f));
+
+				GetWorld()->SpawnActor<AActor>(DissolveCircleClass, SpawnTransform);
+			}
+
+		}), 0.05f, true);
+}
+
+void AKimyuminDemoCharacter::RightMouseBtnReleased()
+{
+	if (modeNumber != 2) return;
+
+	DissolveLaser->SetVisibility(false);
+	DissolveLaser->SetRelativeScale3D(FVector(2.f, 2.f, 2.f));
+	
+	GetWorld()->GetTimerManager().ClearTimer(DissolveTimerHandle);
 }
 
 void AKimyuminDemoCharacter::NotifyControllerChanged()
