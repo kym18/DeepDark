@@ -198,8 +198,13 @@ public:
 	void RightMouseBtnReleased();
 
 	//산소 감소
-	//UFUNCTION()
-	//void DecreaseOxygen();
+	UFUNCTION()
+	void DecreaseOxygen();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Oxygen;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float OxygenConsumptionRate;
 
 public:
 	AKimyuminDemoCharacter();

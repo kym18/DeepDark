@@ -128,7 +128,7 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	isPictorialOpen = false;
 
 	//공격 관련
-	grappleDistance = 5000.f;
+	grappleDistance = 3000.f;
 }
 
 void AKimyuminDemoCharacter::BeginPlay()
@@ -172,22 +172,31 @@ void AKimyuminDemoCharacter::BeginPlay()
 
 	//산소 시스템
 	//우주선 밖에서만 실행 되도록 수정 예정(임시)
-	/*FTimerHandle OxygenTimerHandle;
-	GetWorldTimerManager().SetTimer(
-		OxygenTimerHandle,                  
-		this,                                
-		&AKimyuminDemoCharacter::DecreaseOxygen,            
-		1.0f,                               
-		true
-	);*/
+	UE_LOG(LogTemp, Warning, TEXT("Oxygen Decreased OutOutOut InCave"));
+	if (isInCave) {
+		FTimerHandle OxygenTimerHandle;
+		UE_LOG(LogTemp, Warning, TEXT("Oxygen Decreased Is InCave"));
+		GetWorldTimerManager().SetTimer(
+			OxygenTimerHandle,
+			this,
+			&AKimyuminDemoCharacter::DecreaseOxygen,
+			1.0f,
+			true
+		);
+	}
 
 }
 
-//void AKimyuminDemoCharacter::DecreaseOxygen() 
-//{
-//	//임시
-//	UE_LOG(LogTemp, Warning, TEXT("Oxygen Decreased"));
-//}
+void AKimyuminDemoCharacter::DecreaseOxygen() 
+{
+	if (Oxygen <= 0) {
+		UE_LOG(LogTemp, Warning, TEXT("character die"));
+		
+		return;
+	}
+	Oxygen -= OxygenConsumptionRate;
+
+}
 
 void AKimyuminDemoCharacter::Tick(float DeltaTime)
 {
@@ -514,9 +523,6 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 
 				FVector grapple_location = Hit.Location;
 
-				// 1. GrappleLocation은 외부에서 이미 설정되어 있다고 가정
-				// 2. 그래플 훅 시각 효과 or 로프 쏘기
-
 				// 1. 액터 스폰
 				FTransform SpawnTransform;
 				SpawnTransform.SetLocation(grapple_location);
@@ -528,28 +534,12 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 
 				GrappleCable->SetWorldLocation(grapple_location);
 
-				// 3. 타이머로 위치 보간 업데이트
-				/*GetWorld()->GetTimerManager().SetTimer(
-					GrappleUpdateTimer,
-					this,
-					&AYourCharacter::UpdateGrappleCable,
-					0.01f,
-					true
-				);*/
-
-				// 3. 초기 속도 0으로
-				LaunchCharacter(FVector(0.f, 0.f, 1000.f), false, false);
-
-				// 4. 약간의 지연 후 실제 방향 발사
-				// GetWorld()->GetTimerManager().SetTimer(GrappleLaunchTimerHandle, this, &AYourCharacter::LaunchToGrapple, 0.1f, false);
-
 				FVector CurrentLocation = GetActorLocation();
 				FVector Direction = (grapple_location - CurrentLocation).GetSafeNormal();
 				FVector LaunchVelocity = Direction * 3000.f;
 
-
+				//날기!!!
 				LaunchCharacter(LaunchVelocity, false, false);
-				UE_LOG(LogTemp, Warning, TEXT("LaunchVelocity %s"), *LaunchVelocity.ToString());
 				FTimerHandle GrappleResetTimerHandle;
 				GetWorld()->GetTimerManager().SetTimer(GrappleResetTimerHandle, this, &AKimyuminDemoCharacter::ResetGrappleHook, 0.45f, false);
 			}
