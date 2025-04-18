@@ -27,6 +27,8 @@
 #include "Particles/ParticleSystem.h"
 
 #include "CableComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Mineral.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -93,15 +95,17 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 			LaserArrow->SetupAttachment(LaserMesh);
 
 				// 4. LaserArrow 아래 LaserSphere
-				LaserSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserSphere"));
-				LaserSphere->SetupAttachment(LaserArrow);
+				//LaserSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserSphere"));
+				//LaserSphere->SetupAttachment(LaserArrow);
 
 					// 5. LaserMesh 아래 다른 메시들
 					DissolveLaser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DissolveLaser"));
-					DissolveLaser->SetupAttachment(LaserSphere);
+					DissolveLaser->SetupAttachment(LaserArrow);
+					DissolveLaser->SetVisibility(false);
 
 					Laser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Laser"));
-					Laser->SetupAttachment(LaserSphere);
+					Laser->SetupAttachment(LaserArrow);
+					Laser->SetVisibility(false);
 
 		// 6. RifleMesh (루트에 붙일 수도, FirstPersonCamera에 붙일 수도 있음)
 		RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
@@ -130,7 +134,8 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 void AKimyuminDemoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	SetDefaultMode();
+	UE_LOG(LogTemp, Warning, TEXT("BeginPlay"));
 	//게임 인스턴스 저장
 	UGameInstance* GameInstance = GetGameInstance();
 	if (UMyGameInstance* my_game_instance = Cast<UMyGameInstance>(GameInstance)){
@@ -150,12 +155,10 @@ void AKimyuminDemoCharacter::BeginPlay()
 		}
 
 		if (UUserWidget* map_select_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIMapSelect)) {
-			UE_LOG(LogTemp, Warning, TEXT("map_select_ui"));
 			wbMapSelect = map_select_ui;
 		}
 
 		if (UUserWidget* store_ui = CreateWidget<UUserWidget>(GetWorld(), WB_UIStore)) {
-			UE_LOG(LogTemp, Warning, TEXT("store_ui"));
 			wbStore = store_ui;
 		}
 	}
@@ -212,6 +215,7 @@ void AKimyuminDemoCharacter::SetDefaultMode()
 {
 	modeNumber = 0;
 
+	//LaserSphere->SetVisibility(false);
 	LaserMesh->SetVisibility(false);
 	RifleMesh->SetVisibility(false);
 	FirstPersonCamera->SetActive(false);
@@ -220,8 +224,14 @@ void AKimyuminDemoCharacter::SetDefaultMode()
 
 void AKimyuminDemoCharacter::SetWeaponMode()
 {
-	LaserMesh->SetVisibility(true);
-	RifleMesh->SetVisibility(true);
+	RifleMesh->SetVisibility(false);
+	LaserMesh->SetVisibility(false);
+	if (modeNumber == 1) {
+		RifleMesh->SetVisibility(true);
+	}
+	else if (modeNumber == 2) {
+		LaserMesh->SetVisibility(true);
+	}
 	FirstPersonCamera->SetActive(true);
 	FollowCamera->SetActive(false);
 }
@@ -461,8 +471,7 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 			);
 
 			// 3. 히트한 경우 Dissolve 액터 스폰
-			if (bHit)
-			{
+			if (bHit) {
 				FTransform SpawnTransform;
 				SpawnTransform.SetLocation(Hit.ImpactPoint);
 				SpawnTransform.SetRotation(FQuat::Identity);
@@ -529,17 +538,18 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 				);*/
 
 				// 3. 초기 속도 0으로
-				//LaunchCharacter(FVector(0.f, 0.f, 0.f), true, true);
+				LaunchCharacter(FVector(0.f, 0.f, 1000.f), false, false);
 
 				// 4. 약간의 지연 후 실제 방향 발사
 				// GetWorld()->GetTimerManager().SetTimer(GrappleLaunchTimerHandle, this, &AYourCharacter::LaunchToGrapple, 0.1f, false);
 
 				FVector CurrentLocation = GetActorLocation();
 				FVector Direction = (grapple_location - CurrentLocation).GetSafeNormal();
-				FVector LaunchVelocity = Direction * 2.5f;
+				FVector LaunchVelocity = Direction * 3000.f;
+
 
 				LaunchCharacter(LaunchVelocity, false, false);
-
+				UE_LOG(LogTemp, Warning, TEXT("LaunchVelocity %s"), *LaunchVelocity.ToString());
 				FTimerHandle GrappleResetTimerHandle;
 				GetWorld()->GetTimerManager().SetTimer(GrappleResetTimerHandle, this, &AKimyuminDemoCharacter::ResetGrappleHook, 0.45f, false);
 			}
@@ -595,7 +605,7 @@ void AKimyuminDemoCharacter::FireLaserTick()
 	if (!LaserArrow || !Laser) return;
 
 	FVector Start = LaserArrow->GetComponentLocation();
-	FVector End = Start + LaserArrow->GetForwardVector() * 100000.0f;
+	FVector End = Start + FirstPersonCamera->GetForwardVector() * 100000.0f;
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
@@ -603,17 +613,20 @@ void AKimyuminDemoCharacter::FireLaserTick()
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 
-	if (bHit)
-	{
-		float DistanceToWall = (Hit.ImpactPoint - Start).Size();
+	if (bHit) {
+		float DistanceToWall = Hit.Distance;
 
 		// 1. 메시 길이 조정
-		FVector NewScale = FVector(DistanceToWall * 0.01f, 1.f, 1.f); // Scale은 약간 보정 필요
+		FVector NewScale = FVector(DistanceToWall * 1.0f, 0.17f, 0.17f); // Scale은 약간 보정 필요
 		Laser->SetWorldScale3D(NewScale);
 
 		// 2. 메시 회전 보정
-		FRotator RotationAdjust = FRotator(-50.f, 0.f, 0.f); // 블루프린트에 따라 각도 조정
-		Laser->AddLocalRotation(RotationAdjust);
+		//FRotator RotationAdjust = FRotator(0.f, 0.f, 5.f); // 블루프린트에 따라 각도 조정
+		//Laser->AddLocalRotation(RotationAdjust);
+
+		 // 방향 벡터 계산 (벽면을 바라보게)
+		FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(Start, End);
+		Laser->SetWorldRotation(LookAtRot);
 
 		// 3. 충돌 이펙트 및 데미지
 		if (LaserImpactFX){
@@ -629,17 +642,16 @@ void AKimyuminDemoCharacter::FireLaserTick()
 		);
 
 		// 4. 충돌 액터 스폰 (BP_LaserCollision)
-		if (LaserCollisionClass)
-		{
+		if (LaserCollisionClass) {
 			FTransform SpawnTransform;
 			SpawnTransform.SetLocation(Hit.ImpactPoint);
 			GetWorld()->SpawnActor<AActor>(LaserCollisionClass, SpawnTransform);
 		}
 
 		// 5. 광물 캐스팅 시도
-		//if (ABP_Mineral* Mineral = Cast<ABP_Mineral>(Hit.GetActor())){
-		//	// TODO: 원하는 처리 추가
-		//}
+		if (AMineral* Mineral = Cast<AMineral>(Hit.GetActor())){
+			// TODO: 원하는 처리 추가
+		}
 	}
 }
 
@@ -647,6 +659,7 @@ void AKimyuminDemoCharacter::FireLaserTick()
 void AKimyuminDemoCharacter::LeftMouseBtnReleased()
 {
 	if (modeNumber == 2) { //레이저
+		UE_LOG(LogTemp, Warning, TEXT("modeNumber==2"));
 		Laser->SetVisibility(false);
 		Laser->SetRelativeScale3D(FVector(2, 2, 2));
 		GetWorld()->GetTimerManager().ClearTimer(LaserTimerHandle);
@@ -681,11 +694,11 @@ void AKimyuminDemoCharacter::RightMouseBtnPressed()
 			bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 
 			if (bHit){
-				float DistanceToWall = (Hit.ImpactPoint - Start).Size();
+				float DistanceToWall = Hit.Distance;
 
 				// 3. DissolveLaser 크기 조정
-				DissolveLaser->SetRelativeScale3D(FVector(DistanceToWall * 0.01f, 2.f, 2.f)); // 거리 보정
-				DissolveLaser->AddLocalRotation(FRotator(50.f, 0.f, 0.f));
+				DissolveLaser->SetRelativeScale3D(FVector(DistanceToWall, 2.f, 2.f)); // 거리 보정
+				DissolveLaser->AddLocalRotation(FRotator(5.f, 0.f, 0.f));
 
 				// 4. 히트 지점에 Dissolve 이펙트 스폰
 				FTransform SpawnTransform;

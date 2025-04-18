@@ -64,8 +64,8 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UArrowComponent* LaserArrow;
 
-	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* LaserSphere;
+	//UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	//class UStaticMeshComponent* LaserSphere;
 
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* DissolveLaser;
