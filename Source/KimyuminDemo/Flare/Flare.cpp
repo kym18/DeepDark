@@ -13,7 +13,7 @@
 AFlare::AFlare()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
     // CapsuleComponent 생성 및 루트 설정
     Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
@@ -55,4 +55,5 @@ void AFlare::OnFlareExpired()
         }
     }
 }
+
 

@@ -26,7 +26,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float flareLifeTime;
-	UFUNCTION()
 	void OnFlareExpired();
 
 	UPROPERTY(EditAnywhere)

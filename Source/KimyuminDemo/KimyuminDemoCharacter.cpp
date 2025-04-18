@@ -135,7 +135,7 @@ void AKimyuminDemoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	SetDefaultMode();
-	UE_LOG(LogTemp, Warning, TEXT("BeginPlay"));
+
 	//게임 인스턴스 저장
 	UGameInstance* GameInstance = GetGameInstance();
 	if (UMyGameInstance* my_game_instance = Cast<UMyGameInstance>(GameInstance)){
@@ -215,8 +215,9 @@ void AKimyuminDemoCharacter::SetDefaultMode()
 {
 	modeNumber = 0;
 
-	//LaserSphere->SetVisibility(false);
 	LaserMesh->SetVisibility(false);
+	Laser->SetVisibility(false);
+	DissolveLaser->SetVisibility(false);
 	RifleMesh->SetVisibility(false);
 	FirstPersonCamera->SetActive(false);
 	FollowCamera->SetActive(true);
@@ -265,12 +266,11 @@ void AKimyuminDemoCharacter::SpawnFlare()
 
 
 	// 4. 물리 속도 적용
-	FVector velocity = forward_vector * flareSpeed;
+	FVector velocity = (forward_vector + FVector(0.f, 0.f, 1.f)) * flareSpeed;
 
 	// 피융
 	if (UStaticMeshComponent* flare_mesh = flare->FlareMesh){
 		flare_mesh->SetSimulatePhysics(true);
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *velocity.ToString());
 		flare_mesh->SetPhysicsLinearVelocity(velocity);
 	}
 
