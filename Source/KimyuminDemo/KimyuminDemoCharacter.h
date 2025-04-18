@@ -44,29 +44,187 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	//flare child actor
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChildActor", meta = (AllowPrivateAccess = "true"))
+	//class UChildActorComponent* FlareChildActor;
+
+	//작살
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grapple", meta = (AllowPrivateAccess = "true"))
+	USceneComponent* GrappleStartLocation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grapple", meta = (AllowPrivateAccess = "true"))
+	class UCableComponent* GrappleCable;
+
+	//무기 모드 일 시 (FirstPerson Camera)
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* LaserMesh;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UArrowComponent* LaserArrow;
+
+	//UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	//class UStaticMeshComponent* LaserSphere;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* DissolveLaser;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* Laser;
+
+	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* RifleMesh;
+
+//기본 변수 생성
+private:
+
+	UPROPERTY()
+	class UMyGameInstance* myGameInstance;
+
+	float DeltaSeconds;
+
+//기본 변수 생성
+public:
+
+	UPROPERTY(BlueprintReadWrite)
+	int CurrentCharacterIndex;
+
+	UPROPERTY(BlueprintReadWrite)
+	bool isInCave;
+
+	//모드 (기본, 무기)
+	UPROPERTY(BlueprintReadWrite)
+	int modeNumber;
+	UFUNCTION(BlueprintCallable)
+	void ModeChange();
+	UFUNCTION()
+	void SetDefaultMode();
+	UFUNCTION()
+	void SetWeaponMode();
+
+	//UI
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIClass;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIPictorialBook;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIMapSelect;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> WB_UIStore;
+
+	//도감 UI
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UUserWidget* pictorialBook;
+
+	//맵 선택 or 상점 UI
+	UPROPERTY(BlueprintReadWrite)
+	class UUserWidget* wbMapSelect;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool isOverlapMapSelectZone{ false };
+	UPROPERTY(BlueprintReadWrite)
+	class UUserWidget* wbStore;
+	UPROPERTY(BlueprintReadWrite)
+	bool isOverlapStore{ false };
+	UFUNCTION(BlueprintCallable)
+	void MapAndStoreFlipFlop();
+
+
+	//조명탄
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flare")
+	int flareNum;
+	UPROPERTY(EditAnywhere, Category = "Flare")
+	float flareSpeed;
+	UPROPERTY(EditAnywhere, Category = "Flare")
+	TSubclassOf<AActor> BP_Flare;
+	UFUNCTION(BlueprintCallable)
+	void SpawnFlare();
+
+	//대시
+	bool isDash;
+	UFUNCTION(BlueprintCallable)
+	void DashFlipFlop();
+
+	//도감
+	bool isPictorialOpen;
+	UFUNCTION(BlueprintCallable)
+	void PictorialFlipFlop();
+
+	//공격
+	UFUNCTION(BlueprintCallable)
+	void LeftMouseBtnPressed();
+		//1번 무기
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* ExplosionFX;
+
+		//2번 무기
+		FTimerHandle LaserTimerHandle;
+		void StartFiringLaser();
+		void FireLaserTick();
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* LaserImpactFX;
+		
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> LaserCollisionClass;
+
+		//3번 무기
+		bool IsHoldingF;
+		UPROPERTY(EditAnywhere)
+		float grappleDistance;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveClass;
+		UPROPERTY(EditAnywhere)
+		AActor* currentHole;
+
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> GrappleHookClass;
+
+		AActor* Hook;
+		bool isGrappling;
+
+		UFUNCTION()
+		void ResetGrappleHook();
+		void EnableGrapple();
+
+	UFUNCTION(BlueprintCallable)
+	void LeftMouseBtnReleased();
+
+	UFUNCTION(BlueprintCallable)
+	void RightMouseBtnPressed();
+		FTimerHandle DissolveTimerHandle;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveCircleClass;
+	UFUNCTION(BlueprintCallable)
+	void RightMouseBtnReleased();
+
+	//산소 감소
+	//UFUNCTION()
+	//void DecreaseOxygen();
+
 public:
 	AKimyuminDemoCharacter();
 	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 protected:
+
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
-
-protected:
 
 	virtual void NotifyControllerChanged() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 };
 
