@@ -198,8 +198,20 @@ public:
 	void RightMouseBtnReleased();
 
 	//산소 감소
-	//UFUNCTION()
-	//void DecreaseOxygen();
+	UFUNCTION()
+	void DecreaseOxygen();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Oxygen;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float OxygenConsumptionRate;
+
+	// 이거슨 광물 Update 관련이다...
+	UFUNCTION(BlueprintCallable, Category = "Minerals")
+	void UpdateMineral(FName MineralName);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minerals")
+	TMap<FName, double> MineralList;
 
 public:
 	AKimyuminDemoCharacter();
