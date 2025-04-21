@@ -23,4 +23,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// LaserCollision 나오면 일정 시간 후 사라지게
+private:
+	FTimerHandle DestroyTimerHandle;
+
+	void DestroySelf();
 };

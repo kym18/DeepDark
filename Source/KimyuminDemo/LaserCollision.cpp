@@ -2,6 +2,7 @@
 
 
 #include "LaserCollision.h"
+#include "TimerManager.h"
 
 // Sets default values
 ALaserCollision::ALaserCollision()
@@ -15,6 +16,9 @@ ALaserCollision::ALaserCollision()
 void ALaserCollision::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// LaserCollision 나오면 일정 시간 후 사라지게
+	GetWorld()->GetTimerManager().SetTimer(DestroyTimerHandle, this, &ALaserCollision::DestroySelf, 0.5f, false);
 	
 }
 
@@ -25,3 +29,8 @@ void ALaserCollision::Tick(float DeltaTime)
 
 }
 
+// LaserCollision 나오면 일정 시간 후 사라지게
+void ALaserCollision::DestroySelf()
+{
+	Destroy();
+}
