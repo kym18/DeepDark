@@ -10,8 +10,8 @@ UCLASS()
 class KIMYUMINDEMO_API ALaserCollision : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ALaserCollision();
 
@@ -19,12 +19,12 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// LaserCollision 나오면 일정 시간 후 사라지게
 private:
+	// LaserCollision 나오면 일정 시간 후 사라지게
 	FTimerHandle DestroyTimerHandle;
 
 	void DestroySelf();

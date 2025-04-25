@@ -17,8 +17,8 @@ UCLASS()
 class KIMYUMINDEMO_API ABaseMineral : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ABaseMineral();
 
@@ -30,7 +30,7 @@ protected:
 	UFUNCTION()
 	void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -72,6 +72,6 @@ public:
 	UFUNCTION()
 	void HandleDissolveStep();
 
-	float CurrentVal = 0.0f;
 	FTimerHandle DissolveTimerHandle;
+	float CurrentVal = 0.0f;
 };

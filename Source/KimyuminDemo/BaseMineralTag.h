@@ -7,13 +7,13 @@
 #include "BaseMineralTag.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class KIMYUMINDEMO_API UBaseMineralTag : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
 	// ¹Ì³×¶ö ÀÌ¸§
 	UPROPERTY(EditAnywhere, meta = (BindWidget))

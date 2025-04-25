@@ -16,7 +16,7 @@
 // Sets default values
 ABaseMineral::ABaseMineral()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// 광물 생성
@@ -76,9 +76,17 @@ void ABaseMineral::Tick(float DeltaTime)
 
 // Laser Collision과 부딪히면
 void ABaseMineral::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
+
 {
+	UE_LOG(LogTemp, Warning, TEXT(">>> OnComponentOverlap called: %s hit by %s"), *GetName(), *GetNameSafe(OtherActor));
+
 	if (OtherActor && OtherActor->IsA<ALaserCollision>())
 	{
+		// 레이저 위치를 기준으로 스폰
+		const FTransform LaserTransform = OtherActor->GetActorTransform();
+		const FVector  LaserLocation = OtherActor->GetActorLocation();
+		const FRotator LaserRotation = OtherActor->GetActorRotation();
+
 		// 체력바 이름 초기화
 		WB_HPBar->MineralName->SetText(FText::FromName(UnderMineralName));
 
@@ -97,26 +105,27 @@ void ABaseMineral::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 				WB_HPBar->HPBar->SetPercent(FMath::Clamp(NewRatio, 0.0f, 1.0f));
 			}
 
-			// 체력이 0이면 사라지는 모션 실행, 근데 안됨 왜지?
-			if (HitPoints <= 0.0)
-			{
-				GetWorldTimerManager().SetTimer(DissolveTimerHandle, this, &ABaseMineral::HandleDissolveStep, 0.1f, true);
-			}
-
 			// 체력이 0 이상이면 광물 쪼가리 떨어지게
-			else
+			if (HitPoints > 0.0)
 			{
 				// 흡수 안되는 관상용
 				if (UnderMineralBP)
 				{
-					GetWorld()->SpawnActor<AActor>(UnderMineralBP, GetActorTransform());
+					FActorSpawnParameters Params;
+					GetWorld()->SpawnActor<AActor>(UnderMineralBP, LaserTransform.GetLocation(), LaserTransform.GetRotation().Rotator(), Params);
 				}
 
 				// 실질적으로 흡수되는
 				if (UnderMineralNS)
 				{
-					UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, UnderMineralNS, GetActorLocation());
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, UnderMineralNS, LaserLocation, LaserRotation);
 				}
+			}
+
+			else
+			{
+				// 체력이 0이면 사라지는 모션 실행, 되긴 하는데 좀 어색하넹
+				GetWorldTimerManager().SetTimer(DissolveTimerHandle, this, &ABaseMineral::HandleDissolveStep, 0.01f, true);
 			}
 		}
 	}
@@ -134,11 +143,11 @@ void ABaseMineral::HandleDissolveStep()
 	DMI_Dissolved->GetScalarParameterValue(FName("Dissolve"), CurrentVal);
 
 	// 0.05f씩 더해서 Set
-	float NewVal = CurrentVal + 0.05f;
+	float NewVal = CurrentVal + 0.01f;
 	DMI_Dissolved->SetScalarParameterValue(FName("Dissolve"), NewVal);
 
 	// Dissolve 값이 0.67f 이상이면 Destroy, 근데 Destroy만 됨
-	if (NewVal >=  0.67f)
+	if (NewVal >= 0.67f)
 	{
 		GetWorldTimerManager().ClearTimer(DissolveTimerHandle);
 		Destroy();
