@@ -123,7 +123,7 @@ void APickActor::MouseMove(FVector2D MouseLocation)
     FVector2D MouseDelta = MouseLocation - StartRotateLocation;
 
     // 회전 생성 (Yaw만 적용, X축 이동 → Yaw)
-    FRotator DeltaRotation = FRotator(0.f, 0.f, -1.0f * MouseDelta.X);  // 블루프린트 상 -1 곱함
+    FRotator DeltaRotation = FRotator(0.f, -1.0f * MouseDelta.X, 0.f);  // 블루프린트 상 -1 곱함
 
     // 회전 적용
     SkeletalMesh->AddWorldRotation(DeltaRotation);

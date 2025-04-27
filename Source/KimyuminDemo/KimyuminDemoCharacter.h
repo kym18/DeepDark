@@ -15,7 +15,7 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(config = Game)
+UCLASS(config=Game)
 class AKimyuminDemoCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -27,7 +27,7 @@ class AKimyuminDemoCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
-
+	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
@@ -76,7 +76,15 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* RifleMesh;
 
-	//기본 변수 생성
+	//맵 카메라
+	/** Camera boom positioning the camera behind the character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* MapCameraBoom;
+
+	UPROPERTY(EditAnywhere, Category = Map, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* MapCamera;
+
+//기본 변수 생성
 private:
 
 	UPROPERTY()
@@ -84,7 +92,7 @@ private:
 
 	float DeltaSeconds;
 
-	//기본 변수 생성
+//기본 변수 생성
 public:
 
 	UPROPERTY(BlueprintReadWrite)
@@ -153,70 +161,75 @@ public:
 	//공격
 	UFUNCTION(BlueprintCallable)
 	void LeftMouseBtnPressed();
-	//1번 무기
-	UPROPERTY(EditAnywhere)
-	class UParticleSystem* ExplosionFX;
+		//1번 무기
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* ExplosionFX;
 
-	//2번 무기
-	FTimerHandle LaserTimerHandle;
-	void StartFiringLaser();
-	void FireLaserTick();
-	UPROPERTY(EditAnywhere)
-	class UParticleSystem* LaserImpactFX;
+		//2번 무기
+		FTimerHandle LaserTimerHandle;
+		void StartFiringLaser();
+		void FireLaserTick();
+		UPROPERTY(EditAnywhere)
+		class UParticleSystem* LaserImpactFX;
+		
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> LaserCollisionClass;
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> LaserCollisionClass;
+		//3번 무기
+		bool IsHoldingF;
+		UPROPERTY(EditAnywhere)
+		float grappleDistance;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveClass;
+		UPROPERTY(EditAnywhere)
+		AActor* currentHole;
 
-	//3번 무기
-	bool IsHoldingF;
-	UPROPERTY(EditAnywhere)
-	float grappleDistance;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> DissolveClass;
-	UPROPERTY(EditAnywhere)
-	AActor* currentHole;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> GrappleHookClass;
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> GrappleHookClass;
+		AActor* Hook;
+		bool isGrappling;
 
-	AActor* Hook;
-	bool isGrappling;
-
-	UFUNCTION()
-	void ResetGrappleHook();
-	void EnableGrapple();
+		UFUNCTION()
+		void ResetGrappleHook();
+		void EnableGrapple();
 
 	UFUNCTION(BlueprintCallable)
 	void LeftMouseBtnReleased();
 
 	UFUNCTION(BlueprintCallable)
 	void RightMouseBtnPressed();
-	FTimerHandle DissolveTimerHandle;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> DissolveCircleClass;
+		FTimerHandle DissolveTimerHandle;
+		UPROPERTY(EditAnywhere)
+		TSubclassOf<AActor> DissolveCircleClass;
 	UFUNCTION(BlueprintCallable)
 	void RightMouseBtnReleased();
 
 	//산소 감소
-	//UFUNCTION()
-	//void DecreaseOxygen();
+	UFUNCTION()
+	void DecreaseOxygen();
 
-	//함수 오류 때문에 일단 넣었슴둥
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Oxygen;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float OxygenConsumptionRate;
 
-	// 이거슨 광물 Update 관련이다...
-	UFUNCTION(BlueprintCallable, Category = "Minerals")
-	void UpdateMineral(FName MineralName);
+	//지도 열기
+	UFUNCTION(BlueprintCallable)
+	void OpenMap();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minerals")
-	TMap<FName, double> MineralList;
+	bool IsMapOpen;
+	bool IsMapOpenProgress;
+	float MapCameraBoomLength;
+	float MapCameraBoomLengthTarget;
+
+	AActor* map_character_point;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AActor> MapCharacterPoint;
 
 public:
 	AKimyuminDemoCharacter();
-
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
