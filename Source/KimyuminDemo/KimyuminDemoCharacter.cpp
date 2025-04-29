@@ -33,6 +33,8 @@
 #include "CurrentMap.h"
 #include "MapCharacterPoint.h"
 
+
+
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -124,6 +126,11 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	MapCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MapCamera"));
 	MapCamera ->SetupAttachment(MapCameraBoom);
 	//MapCamera->bUsePawnControlRotation = true;
+
+	 // HeadLamp 컴포넌트 생성
+	// HeadLamp = CreateDefaultSubobject<USpotLightComponent>(TEXT("HeadLamp"));
+	// HeadLamp->SetupAttachment(GetMesh(), TEXT("head")); // "head" 소켓에 부착
+	// HeadLamp->SetVisibility(false); // 기본값 꺼진 상태
 
 	isInCave = false;
 	CurrentCharacterIndex = 0;
@@ -521,7 +528,7 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 			// 데미지 적용
 			UGameplayStatics::ApplyDamage(
 				Hit.GetActor(),
-				10.0f,
+				0.1f,
 				GetController(),
 				this,
 				UDamageType::StaticClass()

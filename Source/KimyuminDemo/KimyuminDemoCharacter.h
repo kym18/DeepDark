@@ -84,6 +84,7 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = Map, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* MapCamera;
 
+
 //기본 변수 생성
 private:
 
