@@ -54,10 +54,7 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grapple", meta = (AllowPrivateAccess = "true"))
 	class UCableComponent* GrappleCable;
 
-	//무기 모드 일 시 (FirstPerson Camera)
-	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FirstPersonCamera;
-
+	//무기 모드 일 시 
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* LaserMesh;
 
@@ -102,6 +99,18 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	bool isInCave;
 
+	// 카메라 관련
+	UPROPERTY(EditAnywhere)
+	float DefaultArmLength = 400.0;
+	UPROPERTY(EditAnywhere)
+	float ZoomedArmLength = 150.f;
+
+	UPROPERTY(EditAnywhere)
+	FVector DefaultCameraOffset = FVector(0.f, 0.f, 0.f);  // 기본 위치
+	UPROPERTY(EditAnywhere)
+	FVector ZoomedCameraOffset = FVector(0.f, 50.f, 30.f); // 오른쪽+위쪽으로 이동
+
+
 	//모드 (기본, 무기)
 	UPROPERTY(BlueprintReadWrite)
 	int modeNumber;
@@ -133,7 +142,7 @@ public:
 	bool isOverlapMapSelectZone{ false };
 	UPROPERTY(BlueprintReadWrite)
 	class UUserWidget* wbStore;
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool isOverlapStore{ false };
 	UFUNCTION(BlueprintCallable)
 	void MapAndStoreFlipFlop();
@@ -227,6 +236,9 @@ public:
 	AActor* map_character_point;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AActor> MapCharacterPoint;
+
+	// 체크용
+	bool bIsDissolveLaserFiring = false;
 
 public:
 	AKimyuminDemoCharacter();
