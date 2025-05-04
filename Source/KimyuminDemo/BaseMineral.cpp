@@ -40,7 +40,7 @@ void ABaseMineral::BeginPlay()
 	Super::BeginPlay();
 
 	// 광물 MI의 Dissolve 초기화
-	if (MineralMesh)
+	if (MineralMesh && MineralMesh->GetMaterial(0))
 	{
 		if (UMaterialInterface* ParentMat = MineralMesh->GetMaterial(0))
 		{
@@ -105,8 +105,13 @@ void ABaseMineral::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 				WB_HPBar->HPBar->SetPercent(FMath::Clamp(NewRatio, 0.0f, 1.0f));
 			}
 
-			// 체력이 0 이상이면 광물 쪼가리 떨어지게
-			if (HitPoints > 0.0)
+			if (HitPoints <= 0.0f)
+			{
+				// 체력이 0이면 사라지는 모션 실행, 되긴 하는데 좀 어색하넹
+				GetWorldTimerManager().SetTimer(DissolveTimerHandle, this, &ABaseMineral::HandleDissolveStep, 0.01f, true);
+			}
+
+			else
 			{
 				// 흡수 안되는 관상용
 				if (UnderMineralBP)
@@ -120,12 +125,6 @@ void ABaseMineral::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 				{
 					UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, UnderMineralNS, LaserLocation, LaserRotation);
 				}
-			}
-
-			else
-			{
-				// 체력이 0이면 사라지는 모션 실행, 되긴 하는데 좀 어색하넹
-				GetWorldTimerManager().SetTimer(DissolveTimerHandle, this, &ABaseMineral::HandleDissolveStep, 0.01f, true);
 			}
 		}
 	}
