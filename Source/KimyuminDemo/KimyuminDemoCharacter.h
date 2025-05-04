@@ -240,6 +240,8 @@ public:
 	// Ã¼Å©¿ë
 	bool bIsDissolveLaserFiring = false;
 
+	void ResetActorPitch();
+
 public:
 	AKimyuminDemoCharacter();
 	

@@ -44,7 +44,7 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
@@ -86,43 +86,43 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	GrappleCable->SetupAttachment(GrappleStartLocation);
 
 
-		// 2. LaserMesh
-		LaserMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserMesh"));
-		LaserMesh->SetupAttachment(GetMesh(), FName("LaserSocket"));
+	// 2. LaserMesh
+	LaserMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserMesh"));
+	LaserMesh->SetupAttachment(GetMesh(), FName("LaserSocket"));
 
-		//LaserMesh->SetupAttachment(GetMesh(), TEXT("RifleSocket"));
+	//LaserMesh->SetupAttachment(GetMesh(), TEXT("RifleSocket"));
 
-			// 3. LaserArrow (LaserMesh 아래)
-			LaserArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("LaserArrow"));
-			LaserArrow->SetupAttachment(LaserMesh);
+		// 3. LaserArrow (LaserMesh 아래)
+	LaserArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("LaserArrow"));
+	LaserArrow->SetupAttachment(LaserMesh);
 
-				// 4. LaserArrow 아래 LaserSphere
-				//LaserSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserSphere"));
-				//LaserSphere->SetupAttachment(LaserArrow);
+	// 4. LaserArrow 아래 LaserSphere
+	//LaserSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LaserSphere"));
+	//LaserSphere->SetupAttachment(LaserArrow);
 
-					// 5. LaserMesh 아래 다른 메시들
-					DissolveLaser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DissolveLaser"));
-					DissolveLaser->SetupAttachment(LaserArrow);
-					DissolveLaser->SetVisibility(false);
+		// 5. LaserMesh 아래 다른 메시들
+	DissolveLaser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DissolveLaser"));
+	DissolveLaser->SetupAttachment(LaserArrow);
+	DissolveLaser->SetVisibility(false);
 
-					Laser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Laser"));
-					Laser->SetupAttachment(LaserArrow);
-					Laser->SetVisibility(false);
+	Laser = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Laser"));
+	Laser->SetupAttachment(LaserArrow);
+	Laser->SetVisibility(false);
 
-		// 6. RifleMesh (루트에 붙일 수도, FirstPersonCamera에 붙일 수도 있음)
-		RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
-		RifleMesh->SetupAttachment(GetMesh(), FName("RifleSocket"));
+	// 6. RifleMesh (루트에 붙일 수도, FirstPersonCamera에 붙일 수도 있음)
+	RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
+	RifleMesh->SetupAttachment(GetMesh(), FName("RifleSocket"));
 
 
 	// Map카메라
 	MapCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("MapCameraBoom"));
-	MapCameraBoom ->SetupAttachment(RootComponent);
-	MapCameraBoom ->TargetArmLength = 400.f;
+	MapCameraBoom->SetupAttachment(RootComponent);
+	MapCameraBoom->TargetArmLength = 400.f;
 	MapCameraBoomLengthTarget = 400.f;
-	MapCameraBoom ->bUsePawnControlRotation = true;
+	MapCameraBoom->bUsePawnControlRotation = true;
 	MapCameraBoom->bDoCollisionTest = false;
 	MapCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MapCamera"));
-	MapCamera ->SetupAttachment(MapCameraBoom);
+	MapCamera->SetupAttachment(MapCameraBoom);
 	//MapCamera->bUsePawnControlRotation = true;
 
 	isInCave = false;
@@ -152,7 +152,7 @@ void AKimyuminDemoCharacter::BeginPlay()
 
 	//게임 인스턴스 저장
 	UGameInstance* GameInstance = GetGameInstance();
-	if (UMyGameInstance* my_game_instance = Cast<UMyGameInstance>(GameInstance)){
+	if (UMyGameInstance* my_game_instance = Cast<UMyGameInstance>(GameInstance)) {
 		myGameInstance = my_game_instance;
 	}
 
@@ -179,7 +179,9 @@ void AKimyuminDemoCharacter::BeginPlay()
 
 	//플레이어 카메라 조정
 	APlayerController* player_controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	if (player_controller && player_controller->PlayerCameraManager) {
+
+	if (player_controller && player_controller->PlayerCameraManager) 
+	{
 		player_controller->PlayerCameraManager->ViewPitchMin = -30.0f;
 		player_controller->PlayerCameraManager->ViewPitchMax = 30.0f;
 	}
@@ -201,11 +203,11 @@ void AKimyuminDemoCharacter::BeginPlay()
 
 }
 
-void AKimyuminDemoCharacter::DecreaseOxygen() 
+void AKimyuminDemoCharacter::DecreaseOxygen()
 {
 	if (Oxygen <= 0) {
 		UE_LOG(LogTemp, Warning, TEXT("character die"));
-		
+
 		return;
 	}
 	Oxygen -= OxygenConsumptionRate;
@@ -272,6 +274,8 @@ void AKimyuminDemoCharacter::SetDefaultMode()
 	RifleMesh->SetVisibility(false);
 	CameraBoom->TargetArmLength = DefaultArmLength;
 	CameraBoom->SocketOffset = DefaultCameraOffset;
+
+	ResetActorPitch();
 }
 
 void AKimyuminDemoCharacter::SetWeaponMode()
@@ -292,6 +296,13 @@ void AKimyuminDemoCharacter::SetWeaponMode()
 	CameraBoom->SocketOffset = ZoomedCameraOffset;
 }
 
+void AKimyuminDemoCharacter::ResetActorPitch()
+{
+	FRotator CurrentRot = GetActorRotation();
+	CurrentRot.Pitch = 0.f;
+
+	SetActorRotation(CurrentRot);
+}
 
 void AKimyuminDemoCharacter::SpawnFlare()
 {
@@ -324,7 +335,7 @@ void AKimyuminDemoCharacter::SpawnFlare()
 	FVector velocity = (forward_vector + FVector(0.f, 0.f, 1.f)) * flareSpeed;
 
 	// 피융
-	if (UStaticMeshComponent* flare_mesh = flare->FlareMesh){
+	if (UStaticMeshComponent* flare_mesh = flare->FlareMesh) {
 		flare_mesh->SetSimulatePhysics(true);
 		flare_mesh->SetPhysicsLinearVelocity(velocity);
 	}
@@ -334,12 +345,12 @@ void AKimyuminDemoCharacter::SpawnFlare()
 void AKimyuminDemoCharacter::DashFlipFlop()
 {
 	if (!isDash) {
-	//걷기 -> 대시 중
+		//걷기 -> 대시 중
 		GetCharacterMovement()->MaxWalkSpeed = 600.f;
 		SetDefaultMode();
 	}
 	else {
-	//대시 중 -> 걷기
+		//대시 중 -> 걷기
 		GetCharacterMovement()->MaxWalkSpeed = 300.f;
 		if (modeNumber != 0) {
 			SetWeaponMode();
@@ -392,7 +403,7 @@ void AKimyuminDemoCharacter::MapAndStoreFlipFlop()
 
 	APlayerController* controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	//맵 선택 UI 오픈
-	if(isOverlapMapSelectZone){
+	if (isOverlapMapSelectZone) {
 		if (!wbMapSelect->IsInViewport()) {
 			wbMapSelect->AddToViewport();
 			// 마우스 커서 ON
@@ -467,7 +478,7 @@ void AKimyuminDemoCharacter::OpenMap()
 		MapCameraBoomLengthTarget = 10000.f;
 		map_actor->ConvertMapMode();
 
-		if(MapCharacterPoint)
+		if (MapCharacterPoint)
 			map_character_point = GetWorld()->SpawnActor<AActor>(MapCharacterPoint, GetActorLocation(), GetActorRotation());
 	}
 	else { // 맵 오픈 아님
@@ -478,7 +489,7 @@ void AKimyuminDemoCharacter::OpenMap()
 			map_character_point->Destroy();
 		}
 	}
-	
+
 }
 
 
@@ -512,9 +523,9 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 		);
 
 		// 3. 피격 처리
-		if (bHit){
+		if (bHit) {
 			// 이펙트 스폰
-			if (ExplosionFX){
+			if (ExplosionFX) {
 				UGameplayStatics::SpawnEmitterAtLocation(
 					GetWorld(),
 					ExplosionFX,
@@ -535,7 +546,7 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 		}
 
 	}
-	else if(modeNumber == 2) { //레이저
+	else if (modeNumber == 2) { //레이저
 		Laser->SetVisibility(true);
 		bIsDissolveLaserFiring = false;
 		StartFiringLaser();
@@ -665,7 +676,7 @@ void AKimyuminDemoCharacter::ResetGrappleHook()
 	);
 }
 
-void AKimyuminDemoCharacter::EnableGrapple(){
+void AKimyuminDemoCharacter::EnableGrapple() {
 	isGrappling = true;
 }
 
@@ -705,7 +716,7 @@ void AKimyuminDemoCharacter::FireLaserTick()
 		DissolveLaser->SetWorldRotation(LookAtRot);
 
 		// 3. 충돌 이펙트 및 데미지
-		if (LaserImpactFX && !bIsDissolveLaserFiring){
+		if (LaserImpactFX && !bIsDissolveLaserFiring) {
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), LaserImpactFX, Hit.ImpactPoint);
 		}
 
@@ -734,7 +745,7 @@ void AKimyuminDemoCharacter::FireLaserTick()
 		}
 
 		// 5. 광물 캐스팅 시도
-		if (AMineral* Mineral = Cast<AMineral>(Hit.GetActor())){
+		if (AMineral* Mineral = Cast<AMineral>(Hit.GetActor())) {
 			// TODO: 원하는 처리 추가
 		}
 	}
@@ -800,7 +811,7 @@ void AKimyuminDemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -830,7 +841,7 @@ void AKimyuminDemoCharacter::Move(const FInputActionValue& Value)
 
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
