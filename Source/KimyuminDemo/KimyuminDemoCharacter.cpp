@@ -30,11 +30,6 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Mineral.h"
 
-#include "CurrentMap.h"
-#include "MapCharacterPoint.h"
-
-
-
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -113,17 +108,6 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 	RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
 	RifleMesh->SetupAttachment(GetMesh(), FName("RifleSocket"));
 
-
-	// MapÄ«¸Þ¶ó
-	MapCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("MapCameraBoom"));
-	MapCameraBoom->SetupAttachment(RootComponent);
-	MapCameraBoom->TargetArmLength = 400.f;
-	MapCameraBoomLengthTarget = 400.f;
-	MapCameraBoom->bUsePawnControlRotation = true;
-	MapCameraBoom->bDoCollisionTest = false;
-	MapCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MapCamera"));
-	MapCamera->SetupAttachment(MapCameraBoom);
-	//MapCamera->bUsePawnControlRotation = true;
 
 	isInCave = false;
 	CurrentCharacterIndex = 0;
@@ -220,29 +204,6 @@ void AKimyuminDemoCharacter::Tick(float DeltaTime)
 
 	DeltaSeconds = DeltaTime;
 
-	//¸Ê Ä«¸Þ¶ó
-	if (IsMapOpenProgress) {
-		bool check = false;
-		if (IsMapOpen && MapCameraBoomLength <= MapCameraBoomLengthTarget) {
-			MapCameraBoomLength += DeltaSeconds * 12000;
-			check = true;
-		}
-		else if (!IsMapOpen && MapCameraBoomLength >= MapCameraBoomLengthTarget) {
-			MapCameraBoomLength -= DeltaSeconds * 12000;
-			check = true;
-		}
-
-		if (abs(MapCameraBoomLengthTarget - MapCameraBoomLength) <= 400.f or check == false) {
-			MapCameraBoomLength = MapCameraBoomLengthTarget;
-			IsMapOpenProgress = false;
-
-			if (!IsMapOpen) { //1, 3ÀÎÄª ¸ðµå
-				FollowCamera->SetActive(true);
-				MapCamera->SetActive(false);
-			}
-		}
-		MapCameraBoom->TargetArmLength = MapCameraBoomLength;
-	}
 }
 
 void AKimyuminDemoCharacter::ModeChange()
@@ -347,14 +308,10 @@ void AKimyuminDemoCharacter::DashFlipFlop()
 	if (!isDash) {
 		//°È±â -> ´ë½Ã Áß
 		GetCharacterMovement()->MaxWalkSpeed = 600.f;
-		SetDefaultMode();
 	}
 	else {
 		//´ë½Ã Áß -> °È±â
 		GetCharacterMovement()->MaxWalkSpeed = 300.f;
-		if (modeNumber != 0) {
-			SetWeaponMode();
-		}
 	}
 	isDash = !isDash;
 }
@@ -454,45 +411,6 @@ void AKimyuminDemoCharacter::MapAndStoreFlipFlop()
 		}
 	}
 }
-
-//Áöµµ ¿­±â
-void AKimyuminDemoCharacter::OpenMap()
-{
-	if (IsMapOpenProgress) return;
-	IsMapOpenProgress = true;
-
-	IsMapOpen = !IsMapOpen;
-
-	ACurrentMap* map_actor = Cast<ACurrentMap>(UGameplayStatics::GetActorOfClass(GetWorld(), ACurrentMap::StaticClass()));
-	if (!map_actor) {
-		UE_LOG(LogTemp, Warning, TEXT("MapActor not valid"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("MapActor valid"));
-
-	if (IsMapOpen) { //¸Ê ¿ÀÇÂ
-		FollowCamera->SetActive(false);
-		MapCamera->SetActive(true);
-
-		MapCameraBoomLengthTarget = 10000.f;
-		map_actor->ConvertMapMode();
-
-		if (MapCharacterPoint)
-			map_character_point = GetWorld()->SpawnActor<AActor>(MapCharacterPoint, GetActorLocation(), GetActorRotation());
-	}
-	else { // ¸Ê ¿ÀÇÂ ¾Æ´Ô
-		MapCameraBoomLengthTarget = 400.f;
-		map_actor->ConvertDefaultMode();
-
-		if (map_character_point) {
-			map_character_point->Destroy();
-		}
-	}
-
-}
-
-
 
 
 //////////////////////////////////////////////////////////////////////////

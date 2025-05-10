@@ -73,14 +73,6 @@ class AKimyuminDemoCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = WeaponMode, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* RifleMesh;
 
-	//맵 카메라
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* MapCameraBoom;
-
-	UPROPERTY(EditAnywhere, Category = Map, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* MapCamera;
-
 
 //기본 변수 생성
 private:
@@ -224,18 +216,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float OxygenConsumptionRate;
 
-	//지도 열기
-	UFUNCTION(BlueprintCallable)
-	void OpenMap();
-
-	bool IsMapOpen;
-	bool IsMapOpenProgress;
-	float MapCameraBoomLength;
-	float MapCameraBoomLengthTarget;
-
-	AActor* map_character_point;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> MapCharacterPoint;
 
 	// 체크용
 	bool bIsDissolveLaserFiring = false;

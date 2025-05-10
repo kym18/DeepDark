@@ -4,32 +4,27 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "BaseEgg.generated.h"
+#include "DissolveWall.generated.h"
 
 UCLASS()
-class KIMYUMINDEMO_API ABaseEgg : public AActor
+class KIMYUMINDEMO_API ADissolveWall : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	ABaseEgg();
+	ADissolveWall();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	// 데미지 처리 오버라이드
-	virtual float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser
-	) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	// Mesh
 	UPROPERTY(EditAnywhere, Category = "Mesh")
-	UPrimitiveComponent* EggMesh;
+	UPrimitiveComponent* WallMesh;
 
 	// HP
 	UPROPERTY(EditDefaultsOnly, Category = "HP")
@@ -42,9 +37,9 @@ protected:
 	UFUNCTION()
 
 	// HP 0 이하면 호출
-	void EggDeath();
+	void WallDissolved();
 
-	FTimerHandle DissolveTimerHandleEgg;
+	FTimerHandle DissolveTimerHandleWall;
 	float CurrentVal = 0.0f;
 
 public:	
