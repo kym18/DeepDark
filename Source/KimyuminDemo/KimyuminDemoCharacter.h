@@ -211,11 +211,34 @@ public:
 	UFUNCTION()
 	void DecreaseOxygen();
 
+	// 사운드 관리
+	UFUNCTION()
+	void OnLaserIntroFinished();
+
+	UFUNCTION()
+	void StopFiringLaser();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Oxygen;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float OxygenConsumptionRate;
 
+	// 총 발사 사운드들
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* RifleFireSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* ExplosionSound;
+
+	// 레이저 사운드
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* LaserIntroSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* LaserLoopSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	UAudioComponent* LaserAudioComponent;
 
 	// 체크용
 	bool bIsDissolveLaserFiring = false;

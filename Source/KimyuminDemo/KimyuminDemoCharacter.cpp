@@ -30,6 +30,9 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Mineral.h"
 
+#include "Sound/SoundBase.h"
+#include "Components/AudioComponent.h"
+
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,6 +130,13 @@ AKimyuminDemoCharacter::AKimyuminDemoCharacter()
 
 	//공격 관련
 	grappleDistance = 3000.f;
+
+	// 레이저 사운드 관련
+	LaserAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("LaserAudioComponent"));
+	LaserAudioComponent->SetupAttachment(LaserArrow);
+	LaserAudioComponent->bAutoActivate = false;
+	LaserAudioComponent->bIsUISound = false;
+	LaserAudioComponent->bAllowSpatialization = true;
 }
 
 void AKimyuminDemoCharacter::BeginPlay()
@@ -196,6 +206,33 @@ void AKimyuminDemoCharacter::DecreaseOxygen()
 	}
 	Oxygen -= OxygenConsumptionRate;
 
+}
+
+void AKimyuminDemoCharacter::OnLaserIntroFinished()
+{
+	// 콜백 중복 방지
+	LaserAudioComponent->OnAudioFinished.RemoveDynamic(this, &AKimyuminDemoCharacter::OnLaserIntroFinished);
+
+	// 루프 사운드로 교체 & 재생
+	LaserAudioComponent->SetSound(LaserLoopSound);
+
+	// SoundBase 자체에서 Looping 옵션을 켜야 합니다:
+	LaserAudioComponent->Play();
+}
+
+void AKimyuminDemoCharacter::StopFiringLaser()
+{
+	// 1. 레이저 타이머 정리
+	GetWorld()->GetTimerManager().ClearTimer(LaserTimerHandle);
+
+	// 2. 재생 중인 사운드 무조건 중지
+	if (LaserAudioComponent)
+	{
+		LaserAudioComponent->Stop();
+
+		// 3. 콜백 제거 (혹시 남아 있을 수 있는 OnAudioFinished 덩어리 싹 지우기)
+		LaserAudioComponent->OnAudioFinished.RemoveAll(this);
+	}
 }
 
 void AKimyuminDemoCharacter::Tick(float DeltaTime)
@@ -422,6 +459,11 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 		// 1. 반동 적용
 		//RifleMesh->AddLocalRotation(FRotator(-2.0f, 0.f, 0.f)); // 위로 반동
 
+		// 발사 사운드
+		if (RifleFireSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, RifleFireSound, GetActorLocation());
+		}
 
 		// 2. 라인 트레이스 계산
 		FVector Start = FollowCamera->GetComponentLocation();
@@ -461,6 +503,16 @@ void AKimyuminDemoCharacter::LeftMouseBtnPressed()
 				this,
 				UDamageType::StaticClass()
 			);
+
+			// 부딪히는 사운드
+			if (ExplosionSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(
+					this,
+					ExplosionSound,
+					Hit.ImpactPoint
+				);
+			}
 		}
 
 	}
@@ -600,7 +652,18 @@ void AKimyuminDemoCharacter::EnableGrapple() {
 
 void AKimyuminDemoCharacter::StartFiringLaser()
 {
+	// 기존 레이저 생성
 	GetWorld()->GetTimerManager().SetTimer(LaserTimerHandle, this, &AKimyuminDemoCharacter::FireLaserTick, 0.05f, true);
+
+	
+	// 레이저 사운드 재생
+	if (LaserLoopSound && LaserAudioComponent && !LaserAudioComponent->IsPlaying())
+	{
+		LaserAudioComponent->SetSound(LaserIntroSound);
+		LaserAudioComponent->Play();
+
+		LaserAudioComponent->OnAudioFinished.AddDynamic(this, &AKimyuminDemoCharacter::OnLaserIntroFinished);
+	}
 }
 
 void AKimyuminDemoCharacter::FireLaserTick()
@@ -678,13 +741,25 @@ void AKimyuminDemoCharacter::LeftMouseBtnReleased()
 		Laser->SetVisibility(false);
 		Laser->SetRelativeScale3D(FVector(2, 2, 2));
 		GetWorld()->GetTimerManager().ClearTimer(LaserTimerHandle);
+
+		// 레이저 사운드 종료
+		StopFiringLaser();
+
+		/*
+		if (LaserAudioComponent && LaserAudioComponent->IsPlaying())
+		{
+			LaserAudioComponent->Stop();
+		}
+		*/
 	}
 
 	else if (modeNumber == 3) {
 		if (!IsHoldingF) return;
+
 		if (currentHole) {
 			currentHole->Destroy();
 		}
+
 		IsHoldingF = false;
 	}
 }
@@ -695,7 +770,8 @@ void AKimyuminDemoCharacter::RightMouseBtnPressed()
 	{
 		bIsDissolveLaserFiring = true;
 		DissolveLaser->SetVisibility(true);
-		StartFiringLaser();;
+
+		StartFiringLaser();
 	}
 }
 
@@ -708,6 +784,10 @@ void AKimyuminDemoCharacter::RightMouseBtnReleased()
 		DissolveLaser->SetVisibility(false);
 		DissolveLaser->SetRelativeScale3D(FVector(2, 2, 2));
 		GetWorld()->GetTimerManager().ClearTimer(LaserTimerHandle);
+
+		// 레이저 사운드 종료
+		StopFiringLaser();
+
 	}
 }
 
